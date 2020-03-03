@@ -4,6 +4,11 @@
 #include <iostream>
 #include <string>
 
+#include "CrTypes.h"
+#include "CameraRemote_SDK.h"
+
+namespace SDK = SCRSDK;
+
 CameraSDK::CameraSDK(QObject *parent) : QObject(parent), m_initialized(false), m_version("")
 {
 
@@ -21,7 +26,23 @@ bool CameraSDK::initialized() const
 
 void CameraSDK::initializeSDK()
 {
-    /// TODO: Initialize SDK
+    CrInt32u version = SDK::GetSDKVersion();
+    int major = (version & 0xFF000000) >> 24;
+    int minor = (version & 0x00FF0000) >> 16;
+    int patch = (version & 0x0000FF00) >> 8;
+    int service = (version & 0x000000FF);
+
+    setVersion(QStringLiteral("%1.%2.%3.%4").arg(major).arg(minor).arg(patch).arg(service));
+
+    auto init_success = SDK::Init();
+
+    if (!init_success) {
+        failedToInitialize();
+        SDK::Release();
+    } else {
+        setInitialized(true);
+        retrieveCameras();
+    }
 }
 
 void CameraSDK::setVersion(QString version){

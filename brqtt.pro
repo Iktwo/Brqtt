@@ -14,7 +14,14 @@ TRANSLATIONS += brqtt_en_US.ts
 
 QML_IMPORT_PATH = $$PWD/qml
 
+LIBS += "$$PWD/lib/Cr_Core.lib"
+
 INCLUDEPATH += "$$PWD/include"
 
 unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+OTHER_FILES += README.md
+
+DISTFILES += \
+    LICENSE
