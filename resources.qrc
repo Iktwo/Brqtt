@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/qml">
+        <file>qml/main.qml</file>
+        <file>qml/MessageOverlay.qml</file>
+        <file>qml/Banner.qml</file>
+        <file>qml/InformationBar.qml</file>
+        <file>qml/config/Dimensions.qml</file>
+        <file>qml/config/qmldir</file>
+        <file>qml/config/Theme.qml</file>
+    </qresource>
+</RCC>
