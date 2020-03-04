@@ -125,9 +125,7 @@ void CameraSDK::retrieveCameras()
 
     for (uint i = 0; i < ncams; ++i) {
         auto camera_info = camera_list->GetCameraObjectInfo(i);
-
-        QString cameraModel = QString::fromStdWString(camera_info->GetModel());
-        appendCamera(new BrqttCamera(cameraModel, this));
+        appendCamera(new BrqttCamera(camera_info, this));
     }
 }
 

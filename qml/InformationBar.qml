@@ -4,12 +4,6 @@ import com.iktwo.brqtt 1.0
 import config 1.0 as Config
 
 Item {
-    anchors {
-        bottom: parent.bottom
-        left: parent.left
-        right: parent.right
-    }
-
     height: 30
 
     Rectangle {
@@ -20,6 +14,16 @@ Item {
         Label {
             id: labelSDKVersion
 
+            function getConnectedCameras(cameras) {
+                var result = 0
+                for (var i = 0; i < cameras.length; ++i) {
+                    if (cameras[i].connected) {
+                        result++;
+                    }
+                }
+                return result
+            }
+
             anchors {
                 left: parent.left
                 leftMargin: Config.Dimensions.smallMargin
@@ -29,7 +33,7 @@ Item {
 
             verticalAlignment: Text.AlignVCenter
 
-            text: qsTr("SDK Version %1").arg(CameraSDK.version)
+            text: qsTr("SDK Version %1 cameras: %2 connected cameras: %3").arg(CameraSDK.version).arg(CameraSDK.cameras.length).arg(getConnectedCameras(CameraSDK.cameras))
 
             color: Config.Theme.textPrimary
         }
