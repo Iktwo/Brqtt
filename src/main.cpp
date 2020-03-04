@@ -13,14 +13,6 @@ static QObject *camera_sdk_provider(QQmlEngine *engine, QJSEngine *scriptEngine)
     return new CameraSDK();
 }
 
-static QObject *brqtt_camera_provider(QQmlEngine *engine, QJSEngine *scriptEngine)
-{
-    Q_UNUSED(engine)
-    Q_UNUSED(scriptEngine)
-
-    return new BrqttCamera();
-}
-
 int main(int argc, char *argv[])
 {
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
@@ -35,8 +27,9 @@ int main(int argc, char *argv[])
 
     engine.addImportPath("qrc:/qml/qml");
 
+    qmlRegisterType<BrqttCamera>("com.iktwo.brqtt", 1, 0, "BrqttCamera");
+
     qmlRegisterSingletonType<CameraSDK>("com.iktwo.brqtt", 1, 0, "CameraSDK", camera_sdk_provider);
-    qmlRegisterSingletonType<BrqttCamera>("com.iktwo.brqtt", 1, 0, "BrqttCamera", brqtt_camera_provider);
 
     QObject::connect(&engine, SIGNAL(quit()), QCoreApplication::instance(), SLOT(quit()));
 

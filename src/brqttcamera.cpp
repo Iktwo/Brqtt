@@ -1,8 +1,11 @@
 #include "brqttcamera.h"
 
-BrqttCamera::BrqttCamera(QObject *parent) : QObject(parent)
+BrqttCamera::BrqttCamera(QObject *parent) : QObject(parent), m_model("Unknown")
 {
+}
 
+BrqttCamera::BrqttCamera(QString model, QObject *parent) : QObject(parent), m_model(model)
+{
 }
 
 QString BrqttCamera::model() const

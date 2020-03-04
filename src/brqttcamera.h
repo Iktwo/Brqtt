@@ -10,7 +10,9 @@ class BrqttCamera : public QObject
 public:
     explicit BrqttCamera(QObject *parent = nullptr);
 
-    Q_PROPERTY(QString model READ model WRITE setModel NOTIFY modelChanged)
+    BrqttCamera(QString model, QObject *parent = nullptr);
+
+    Q_PROPERTY(QString model READ model NOTIFY modelChanged)
 
     QString model() const;
 
