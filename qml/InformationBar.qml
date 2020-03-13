@@ -14,16 +14,6 @@ Item {
         Label {
             id: labelSDKVersion
 
-            function getConnectedCameras(cameras) {
-                var result = 0
-                for (var i = 0; i < cameras.length; ++i) {
-                    if (cameras[i].connected) {
-                        result++;
-                    }
-                }
-                return result
-            }
-
             anchors {
                 left: parent.left
                 leftMargin: Config.Dimensions.smallMargin
@@ -33,7 +23,10 @@ Item {
 
             verticalAlignment: Text.AlignVCenter
 
-            text: qsTr("SDK Version %1 cameras: %2 connected cameras: %3").arg(CameraSDK.version).arg(CameraSDK.cameras.length).arg(getConnectedCameras(CameraSDK.cameras))
+            text: qsTr("SDK Version %1 camera connected: %2 live view state: %3")
+            .arg(CameraSDK.version)
+            .arg(CameraSDK.camera != null && CameraSDK.camera.connected)
+            .arg(CameraSDK.camera == null ? qsTr("Disabled") : (CameraSDK.camera.liveViewState === BrqttCamera.Enabled ? qsTr("Enabled") : CameraSDK.camera.liveViewState === BrqttCamera.Disabled ? qsTr("Disabled") : "Not supported"))
 
             color: Config.Theme.textPrimary
         }

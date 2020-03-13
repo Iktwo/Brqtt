@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include <QList>
-#include <QQmlListProperty>
+#include <QTimer>
 
 #include "brqttcamera.h"
 
@@ -12,20 +12,16 @@ class CameraSDK : public QObject
     Q_OBJECT
 public:
     explicit CameraSDK(QObject *parent = nullptr);
+    ~CameraSDK();
+
     Q_PROPERTY(QString version READ version NOTIFY versionChanged)
     Q_PROPERTY(bool initialized READ initialized NOTIFY initializedChanged)
-    Q_PROPERTY(QQmlListProperty<BrqttCamera> cameras READ cameras NOTIFY camerasChanged)
+    Q_PROPERTY(BrqttCamera * camera READ camera NOTIFY cameraChanged)
 
     QString version() const;
     bool initialized() const;
 
-    QQmlListProperty<BrqttCamera> cameras();
-
-    void appendCamera(BrqttCamera*);
-    static void appendCamera(QQmlListProperty<BrqttCamera>*, BrqttCamera*);
-    static int cameraCount(QQmlListProperty<BrqttCamera>*);
-    static BrqttCamera *camera(QQmlListProperty<BrqttCamera>*, int);
-    static void clearCameras(QQmlListProperty<BrqttCamera>*);
+    BrqttCamera * camera();
 
 public slots:
     void initializeSDK();
@@ -36,15 +32,19 @@ signals:
     void failedToInitialize();
     void versionChanged(QString version);
     void initializedChanged(bool initialized);
-
-    void camerasChanged();
+    void cameraChanged();
+    void onError(QString message);
+    void onWarning(QString message);
 
 private:
     bool m_initialized;
     QString m_version;
+    BrqttCamera * m_camera;
 
+    void setCamera(BrqttCamera * camera);
+
+private slots:
     void retrieveCameras();
-    QList<BrqttCamera *> m_cameras;
 };
 
 #endif // CAMERASDK_H

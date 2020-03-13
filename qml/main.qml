@@ -33,32 +33,25 @@ ApplicationWindow {
             messageOverlay.showMessage("Failed to initialize SDK")
         }
 
-        onCamerasChanged: {
-            // If there is a single camera detected, let's try to connect to it
-            if (CameraSDK.cameras.length === 1) {
-                CameraSDK.cameras[0].connect()
+        onCameraChanged: {
+            if (CameraSDK.camera != null) {
+                CameraSDK.camera.connectToDevice()
             }
         }
     }
 
-    ListView {
-        id: listViewCameraSelection
-
+    Label {
+        id: labelAperture
         anchors.fill: parent
+        color: "Yellow"
+        visible: text != "F0"
+        text: "F" + (CameraSDK.camera === null ? 0 : CameraSDK.camera.aperture)
+    }
 
-        delegate: Button {
-            text: modelData.model
+    Connections {
+        target: CameraSDK.camera
 
-            onClicked: modelData.connect()
-
-            Rectangle {
-                anchors.fill: parent
-                opacity: 0.4
-                color: modelData.connected ? "green" : "red"
-            }
-        }
-
-        model: CameraSDK.cameras
+        enabled: CameraSDK.camera != null
     }
 
     MessageOverlay {
@@ -66,6 +59,4 @@ ApplicationWindow {
 
         parent: Overlay.overlay
     }
-
-    Component.onCompleted: CameraSDK.initializeSDK()
 }

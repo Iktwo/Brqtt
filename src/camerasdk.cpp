@@ -1,17 +1,26 @@
 #include "camerasdk.h"
 
-#include <QDebug>
 #include <iostream>
 #include <string>
-#include <QQmlListProperty>
+#include <QTimer>
+#include <QDebug>
 
 #include "CrTypes.h"
 #include "CameraRemote_SDK.h"
 
 namespace SDK = SCRSDK;
 
-CameraSDK::CameraSDK(QObject *parent) : QObject(parent), m_initialized(false), m_version("")
+CameraSDK::CameraSDK(QObject *parent) : QObject(parent),
+    m_initialized(false),
+    m_version(""),
+    m_camera(NULL)
 {
+    initializeSDK();
+}
+
+CameraSDK::~CameraSDK()
+{
+    SDK::Release();
 }
 
 QString CameraSDK::version() const
@@ -24,73 +33,29 @@ bool CameraSDK::initialized() const
     return m_initialized;
 }
 
-QQmlListProperty<BrqttCamera> CameraSDK::cameras()
+BrqttCamera * CameraSDK::camera()
 {
-    return QQmlListProperty<BrqttCamera>(this,
-                                         nullptr,
-                                         &CameraSDK::appendCamera,
-                                         &CameraSDK::cameraCount,
-                                         &CameraSDK::camera,
-                                         &CameraSDK::clearCameras);
-}
-
-void CameraSDK::appendCamera(BrqttCamera * camera) {
-    m_cameras.append(camera);
-    emit camerasChanged();
-}
-
-void CameraSDK::appendCamera(QQmlListProperty<BrqttCamera>* list, BrqttCamera* camera)
-{
-    CameraSDK* cameraSDK = qobject_cast<CameraSDK*>(list->object);
-    if (cameraSDK && camera) {
-        cameraSDK->appendCamera(camera);
-    }
-}
-
-int CameraSDK::cameraCount(QQmlListProperty<BrqttCamera>* list)
-{
-    CameraSDK* cameraSDK = qobject_cast<CameraSDK*>(list->object);
-    if (cameraSDK) {
-        return cameraSDK->m_cameras.count();
-    }
-    return 0;
-}
-
-BrqttCamera *CameraSDK::camera(QQmlListProperty<BrqttCamera>* list, int index)
-{
-    CameraSDK* cameraSDK = qobject_cast<CameraSDK*>(list->object);
-    if (cameraSDK) {
-        return cameraSDK->m_cameras.at(index);
-    }
-    return nullptr;
-}
-
-void CameraSDK::clearCameras(QQmlListProperty<BrqttCamera>* list)
-{
-    CameraSDK* cameraSDK = qobject_cast<CameraSDK*>(list->object);
-    if (cameraSDK) {
-        cameraSDK->m_cameras.clear();
-        emit cameraSDK->camerasChanged();
-    }
+    return m_camera;
 }
 
 void CameraSDK::initializeSDK()
 {
-    CrInt32u version = SDK::GetSDKVersion();
-    int major = (version & 0xFF000000) >> 24;
-    int minor = (version & 0x00FF0000) >> 16;
-    int patch = (version & 0x0000FF00) >> 8;
-    int service = (version & 0x000000FF);
-
-    setVersion(QStringLiteral("%1.%2.%3.%4").arg(major).arg(minor).arg(patch).arg(service));
-
-    auto init_success = SDK::Init();
+    auto init_success = SDK::Init(0);
 
     if (!init_success) {
         failedToInitialize();
         SDK::Release();
     } else {
         setInitialized(true);
+
+        CrInt32u version = SDK::GetSDKVersion();
+        int major = (version & 0xFF000000) >> 24;
+        int minor = (version & 0x00FF0000) >> 16;
+        int patch = (version & 0x0000FF00) >> 8;
+        int service = (version & 0x000000FF);
+
+        setVersion(QStringLiteral("%1.%2.%3.%4").arg(major).arg(minor).arg(patch).arg(service));
+
         retrieveCameras();
     }
 }
@@ -114,19 +79,43 @@ void CameraSDK::setInitialized(bool initialized)
 
 void CameraSDK::retrieveCameras()
 {
-    SDK::ICrEnumCameraObjectInfo* camera_list = nullptr;
-    auto enum_status = SDK::EnumCameraObjects(&camera_list);
+    if (m_camera == NULL) {
+        SDK::ICrEnumCameraObjectInfo* camera_list = nullptr;
+        auto enum_status = SDK::EnumCameraObjects(&camera_list);
 
-    if (CR_FAILED(enum_status) || camera_list == nullptr) {
-        return;
+        if (CR_FAILED(enum_status) || camera_list == nullptr) {
+            camera_list->Release();
+            return;
+        }
+
+        auto ncams = camera_list->GetCount();
+
+        if (ncams > 1) {
+            emit onWarning(tr("More than one camera detected. The application will attempt to connect to the first one"));
+        }
+
+        if (ncams > 0) {
+            auto cameraInfo = camera_list->GetCameraObjectInfo(0);
+
+            if (m_camera != NULL) {
+                delete m_camera;
+            }
+
+            setCamera(new BrqttCamera(cameraInfo, this));
+        } else {
+            emit onWarning(tr("No cameras detected"));
+        }
+
+        camera_list->Release();
     }
+}
 
-    auto ncams = camera_list->GetCount();
+void CameraSDK::setCamera(BrqttCamera *camera)
+{
+    m_camera = camera;
+    emit cameraChanged();
 
-    for (uint i = 0; i < ncams; ++i) {
-        auto camera_info = camera_list->GetCameraObjectInfo(i);
-        appendCamera(new BrqttCamera(camera_info, this));
-    }
+    QTimer::singleShot(500, camera, QOverload<>::of(&BrqttCamera::connectToDevice));
 }
 
 
