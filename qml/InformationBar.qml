@@ -23,10 +23,9 @@ Item {
 
             verticalAlignment: Text.AlignVCenter
 
-            text: qsTr("SDK Version %1 camera connected: %2 live view state: %3")
+            text: qsTr("SDK Version %1 camera connected: %2")
             .arg(CameraSDK.version)
             .arg(CameraSDK.camera != null && CameraSDK.camera.connected)
-            .arg(CameraSDK.camera == null ? qsTr("Disabled") : (CameraSDK.camera.liveViewState === BrqttCamera.Enabled ? qsTr("Enabled") : CameraSDK.camera.liveViewState === BrqttCamera.Disabled ? qsTr("Disabled") : "Not supported"))
 
             color: Config.Theme.textPrimary
         }

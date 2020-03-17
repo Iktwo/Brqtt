@@ -13,6 +13,9 @@
 #include <QDir>
 #include <QFile>
 #include <QUrl>
+#include <QVideoSurfaceFormat>
+#include <QVideoFrame>
+#include <QLibraryInfo>
 
 namespace SDK = SCRSDK;
 
@@ -21,7 +24,10 @@ BrqttCamera::BrqttCamera(QObject *parent) : QObject(parent),
     m_model("Unknown"),
     m_connected(false),
     m_aperture(0),
-    m_liveViewState(Unsupported)
+    m_liveViewState(Unsupported),
+    m_liveView(NULL),
+    m_liveViewQuality(Low),
+    m_imageSize(0, 0)
 {
 }
 
@@ -29,7 +35,10 @@ BrqttCamera::BrqttCamera(SCRSDK::ICrCameraObjectInfo const *camera_info, QObject
     m_deviceHandle(0),
     m_connected(false),
     m_aperture(0),
-    m_liveViewState(Unsupported)
+    m_liveViewState(Unsupported),
+    m_liveView(NULL),
+    m_liveViewQuality(Low),
+    m_imageSize(0, 0)
 {
     m_info = SDK::CreateCameraObjectInfo(
                 camera_info->GetName(),
@@ -54,6 +63,7 @@ BrqttCamera::BrqttCamera(SCRSDK::ICrCameraObjectInfo const *camera_info, QObject
 
 BrqttCamera::~BrqttCamera()
 {
+    delete m_liveView;
     m_info->Release();
 }
 
@@ -64,7 +74,7 @@ QString BrqttCamera::model() const
 
 bool BrqttCamera::connectToDevice()
 {
-    if (m_info != NULL) {
+    if (m_info != NULL && !connected()) {
         qDebug() << "Trying to connect to device" << m_model;
         auto connect_status = SDK::Connect(m_info, this, &m_deviceHandle);
 
@@ -114,6 +124,7 @@ void BrqttCamera::OnDisconnected(CrInt32u error)
     }
 
     setConnected(false);
+    m_deviceHandle = 0;
 }
 
 void BrqttCamera::OnPropertyChanged()
@@ -137,13 +148,23 @@ void BrqttCamera::OnCompleteDownload(CrChar *filename)
 void BrqttCamera::OnWarning(CrInt32u warning)
 {
     ///TODO: implement this
-    qDebug() << "On warning" << warning;
+    qDebug() << "Warning: 0x" << std::hex << warning << std::dec << '\n';
 }
 
 void BrqttCamera::OnError(CrInt32u error)
 {
     ///TODO: implement this
-    qDebug() << "On error" << error;
+    qDebug() << "Error: 0x" << std::hex << error << std::dec << '\n';
+}
+
+QAbstractVideoSurface *BrqttCamera::videoSurface() const
+{
+    return m_liveView;
+}
+
+BrqttCamera::AspectRatio BrqttCamera::aspectRatio() const
+{
+    return m_aspectRatio;
 }
 
 BrqttCamera::LiveViewState BrqttCamera::liveViewState() const
@@ -269,6 +290,41 @@ void BrqttCamera::getProperties()
             case SDK::CrDevicePropertyCode::CrDeviceProperty_LiveViewStatus:
                 break;
 
+            case SDK::CrDevicePropertyCode::CrDeviceProperty_ShutterSpeed:
+                ///TODO: update shutter speed
+                break;
+
+            case SDK::CrDevicePropertyCode::CrDeviceProperty_IsoSensitivity:
+                ///TODO: update iso
+                break;
+
+            case SDK::CrDevicePropertyCode::CrDeviceProperty_WhiteBalance:
+                ///TODO: update white balance
+                break;
+
+            case SDK::CrDevicePropertyCode::CrDeviceProperty_BatteryLevel:
+                ///TODO: update battery level
+                break;
+
+            case SDK::CrDevicePropertyCode::CrDeviceProperty_AspectRatio:
+                setAspectRatio(AspectRatio(prop.GetCurrentValue()));
+                ///TODO: update aspect ratio
+                break;
+
+            case SDK::CrDevicePropertyCode::CrDeviceProperty_DRO:
+                ///TODO: update DRO
+                break;
+
+            case SDK::CrDevicePropertyCode::CrDeviceProperty_NearFar:
+                ///TODO: update near far
+                break;
+
+            case SDK::CrDevicePropertyCode::CrDeviceProperty_LiveView_Image_Quality:
+                // The SDK documentation says that the image size depends on the live view image quality and the aspect ratio
+                // Since the image quality has changed here, this resets the image size
+                m_imageSize = QSize(0, 0);
+                m_liveViewQuality = LiveViewQuality(prop.GetCurrentValue());
+                break;
             default:
                 break;
             }
@@ -282,11 +338,6 @@ void BrqttCamera::getProperties()
 
 void BrqttCamera::getLiveViewProperties()
 {
-    qDebug() << "getLiveViewProperties";
-    qDebug() << "CrLiveViewProperty_LiveViewUndefined" << SDK::CrLiveViewPropertyCode::CrLiveViewProperty_LiveViewUndefined;
-    qDebug() << "CrLiveViewProperty_AF_Area_Position" << SDK::CrLiveViewPropertyCode::CrLiveViewProperty_AF_Area_Position;
-    qDebug() << "LiveViewMaxVal" << SDK::CrLiveViewPropertyCode::CrLiveViewProperty__LiveViewMaxVal;
-
     CrInt32 num = 0;
     SDK::CrLiveViewProperty* property = NULL;
     auto err = SDK::GetLiveViewProperties(m_deviceHandle, &property, &num);
@@ -302,14 +353,6 @@ void BrqttCamera::getLiveViewProperties()
 
     for (std::int32_t i = 0; i < num; ++i) {
         auto prop = property[i];
-
-        qDebug() << "lv Property" << prop.GetCode();
-
-        if (prop.IsGetEnableCurrentValue()) {
-            qDebug() << "lv Property value:" << prop.GetValue();
-        } else {
-            qDebug() << "Cant read lv property";
-        }
     }
 
     SDK::ReleaseLiveViewProperties(m_deviceHandle, property);
@@ -318,6 +361,7 @@ void BrqttCamera::getLiveViewProperties()
 void BrqttCamera::configureDeviceAndFetchProperties(bool connected)
 {
     if (connected) {
+        SDK::SetDeviceSetting(m_deviceHandle, SDK::SettingKey::Setting_Key_EnableLiveView, 1);
         setSavePath();
         getProperties();
     } else {
@@ -372,6 +416,12 @@ void BrqttCamera::debugErrorMessage(QString error)
 
 void BrqttCamera::getLiveView()
 {
+    qDebug() << "getLiveView";
+
+    if (QLibraryInfo::isDebugBuild()) {
+        return;
+    }
+
     if (connected()) {
         CrInt32 num = 0;
         SDK::CrLiveViewProperty* property = NULL;
@@ -394,18 +444,21 @@ void BrqttCamera::getLiveView()
             return;
         }
 
-        if (0 < inf.GetBufferSize()) {
+        if (inf.GetBufferSize() > 0) {
             auto* image_data = new SDK::CrImageDataBlock();
+            image_data->SetFrameNo(0);
             image_data->SetSize(inf.GetBufferSize());
-            image_data->SetData(new CrInt8u[inf.GetBufferSize()]);
+            image_data->SetData(new CrInt8u[image_data->GetSize()]);
 
             err = SDK::GetLiveViewImage(m_deviceHandle, image_data);
-            qDebug() << "Got live view image";
             if (CR_FAILED(err)) {
                 emit onError(tr("Failed to get live view image %1").arg(err));
                 delete image_data;
             } else {
                 if (0 < image_data->GetSize()) {
+                    ///TODO: figure out how to construct a QImage without writting and reading from a file
+
+                    // Get the real size from a file
                     std::wstring path = QDir::currentPath().toStdWString();
                     path.append(L"\\LiveView000000.JPG");
 
@@ -414,6 +467,41 @@ void BrqttCamera::getLiveView()
                         file.write((char *)image_data->GetImageData(), image_data->GetImageSize());
                         file.close();
                     }
+
+                    QString filePath = QString::fromStdWString(path);
+
+                    QImage image = QImage();
+                    image.load(filePath);
+                    QFile* imageFile = new QFile(filePath);
+
+
+                    imageFile->remove();
+                    delete imageFile;
+
+                    m_imageSize = image.size();
+
+                    if (m_liveView != NULL) {
+                        if (!m_liveView->isActive()) {
+                            m_liveView->start(QVideoSurfaceFormat(m_imageSize, QVideoFrame::pixelFormatFromImageFormat(image.format())));
+                        }
+
+                        m_liveView->present(QVideoFrame(image));
+                    }
+
+                    if (m_liveView != NULL) {
+                        if (m_liveView->isActive()) {
+                            // If live view is active then reschedule the timer
+                            QTimer* timer = new QTimer();
+
+                            connect(timer, &QTimer::timeout, [=]() {
+                                getLiveView();
+                                timer->deleteLater();
+                            } );
+
+                            timer->start(33);
+                        }
+                    }
+
                     delete image_data;
                 } else {
                     emit onError(tr("Failed to get live view"));
@@ -484,4 +572,35 @@ void BrqttCamera::setFocusNear()
     // CrNearFar_PLUS_M -
     // CrNearFar_PLUS_S -
     setFocusFarNear(SDK::CrNearFarVal::CrNearFar_MINUS_M);
+}
+
+void BrqttCamera::setVideoSurface(QAbstractVideoSurface *liveView)
+{
+    if (m_liveView == liveView)
+        return;
+
+    m_liveView = liveView;
+    emit videoSurfaceChanged(m_liveView);
+
+    QTimer* timer = new QTimer();
+
+    connect(timer, &QTimer::timeout, [=]() {
+        getLiveView();
+        timer->deleteLater();
+    } );
+
+    timer->start(1000);
+}
+
+void BrqttCamera::setAspectRatio(BrqttCamera::AspectRatio aspectRatio)
+{
+    if (m_aspectRatio == aspectRatio)
+        return;
+
+    // The SDK documentation says that the image size depends on the live view image quality and the aspect ratio
+    // Since the image quality has changed here, this resets the image size
+    m_imageSize = QSize(0, 0);
+
+    m_aspectRatio = aspectRatio;
+    emit aspectRatioChanged(m_aspectRatio);
 }

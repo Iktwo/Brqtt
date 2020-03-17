@@ -2,6 +2,7 @@
 #define BRQTTCAMERA_H
 
 #include <QObject>
+#include <QAbstractVideoSurface>
 
 #include "CameraRemote_SDK.h"
 #include "IDeviceCallback.h"
@@ -10,6 +11,8 @@ class BrqttCamera : public QObject, public SCRSDK::IDeviceCallback
 {
     Q_OBJECT
     Q_ENUMS(LiveViewState)
+    Q_ENUMS(LiveViewQuality)
+    Q_ENUMS(AspectRatio)
 
 public:
     explicit BrqttCamera(QObject *parent = nullptr);
@@ -21,10 +24,15 @@ public:
     Q_PROPERTY(double aperture READ aperture NOTIFY apertureChanged)
     Q_PROPERTY(int shutterSpeed READ shutterSpeed NOTIFY shutterSpeedChanged)
     Q_PROPERTY(LiveViewState liveViewState READ liveViewState NOTIFY liveViewStateChanged)
+    Q_PROPERTY(AspectRatio aspectRatio READ aspectRatio NOTIFY aspectRatioChanged)
+    Q_PROPERTY(QAbstractVideoSurface* videoSurface READ videoSurface NOTIFY videoSurfaceChanged WRITE setVideoSurface)
 
     enum LiveViewState { Disabled = 0, Enabled = 1, Unsupported = 2 };
+    enum AspectRatio { Ratio3_2 = 1, Ratio16_9 = 2, Ratio4_3 = 3, Ratio1_1 = 4};
+    enum LiveViewQuality { High = SCRSDK::CrPropertyLiveViewImageQuality::CrPropertyLiveViewImageQuality_High, Low = SCRSDK::CrPropertyLiveViewImageQuality::CrPropertyLiveViewImageQuality_High };
 
     Q_ENUM(LiveViewState)
+    Q_ENUM(LiveViewQuality)
 
     QString model() const;
     bool connected() const;
@@ -32,6 +40,7 @@ public:
     int shutterSpeed() const;
     void setSavePath();
     LiveViewState liveViewState() const;
+    AspectRatio aspectRatio() const;
 
     // IDeviceCallback
     void OnConnected(SCRSDK::DeviceConnectionVersioin version) override;
@@ -42,15 +51,20 @@ public:
     void OnWarning(CrInt32u warning) override;
     void OnError(CrInt32u error) override;
 
+    QAbstractVideoSurface* videoSurface() const;
+
 public slots:
     bool connectToDevice();
     void getLiveView();
     void setAperture(double aperture);
     void setShutterSpeed(int shutterSpeed);
     void setLiveViewState(LiveViewState liveViewState);
+    void setAspectRatio(AspectRatio aspectRatio);
     void takePhoto();
     void setFocusFar();
     void setFocusNear();
+
+    void setVideoSurface(QAbstractVideoSurface* liveView);
 
 signals:
     void modelChanged(QString model);
@@ -62,7 +76,10 @@ signals:
     void onPropertyChanged();
     void onLiveViewPropertyChanged();
     void liveViewStateChanged(LiveViewState liveViewState);
+    void aspectRatioChanged(AspectRatio aspectRatio);
     void downloadedPhoto(QString filePath);
+
+    void videoSurfaceChanged(QAbstractVideoSurface* videoSurface);
 
 private:
     void setModel(QString model);
@@ -78,6 +95,12 @@ private:
     double m_aperture;
     int m_shutterSpeed;
     LiveViewState m_liveViewState;
+    AspectRatio m_aspectRatio;
+
+    QAbstractVideoSurface* m_liveView;
+    LiveViewQuality m_liveViewQuality;
+
+    QSize m_imageSize;
 
 private slots:
     void debugErrorMessage(QString error);

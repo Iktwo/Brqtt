@@ -84,7 +84,6 @@ void CameraSDK::retrieveCameras()
         auto enum_status = SDK::EnumCameraObjects(&camera_list);
 
         if (CR_FAILED(enum_status) || camera_list == nullptr) {
-            camera_list->Release();
             return;
         }
 
@@ -114,8 +113,6 @@ void CameraSDK::setCamera(BrqttCamera *camera)
 {
     m_camera = camera;
     emit cameraChanged();
-
-    QTimer::singleShot(500, camera, QOverload<>::of(&BrqttCamera::connectToDevice));
 }
 
 

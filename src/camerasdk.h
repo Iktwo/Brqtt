@@ -27,6 +27,7 @@ public slots:
     void initializeSDK();
     void setVersion(QString version);
     void setInitialized(bool initialized);
+    void retrieveCameras();
 
 signals:
     void failedToInitialize();
@@ -42,9 +43,6 @@ private:
     BrqttCamera * m_camera;
 
     void setCamera(BrqttCamera * camera);
-
-private slots:
-    void retrieveCameras();
 };
 
 #endif // CAMERASDK_H
