@@ -7,5 +7,7 @@
         <file>qml/config/Dimensions.qml</file>
         <file>qml/config/qmldir</file>
         <file>qml/config/Theme.qml</file>
+        <file>qml/ShutterButton.qml</file>
+        <file>qml/FocusPrecisionSlider.qml</file>
     </qresource>
 </RCC>

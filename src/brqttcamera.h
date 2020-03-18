@@ -13,6 +13,7 @@ class BrqttCamera : public QObject, public SCRSDK::IDeviceCallback
     Q_ENUMS(LiveViewState)
     Q_ENUMS(LiveViewQuality)
     Q_ENUMS(AspectRatio)
+    Q_ENUMS(FocusPrecision)
 
 public:
     explicit BrqttCamera(QObject *parent = nullptr);
@@ -30,9 +31,11 @@ public:
     enum LiveViewState { Disabled = 0, Enabled = 1, Unsupported = 2 };
     enum AspectRatio { Ratio3_2 = 1, Ratio16_9 = 2, Ratio4_3 = 3, Ratio1_1 = 4};
     enum LiveViewQuality { High = SCRSDK::CrPropertyLiveViewImageQuality::CrPropertyLiveViewImageQuality_High, Low = SCRSDK::CrPropertyLiveViewImageQuality::CrPropertyLiveViewImageQuality_High };
+    enum FocusPrecision { SmallPrecision, MediumPrecision, LargePrecision };
 
     Q_ENUM(LiveViewState)
     Q_ENUM(LiveViewQuality)
+    Q_ENUM(FocusPrecision)
 
     QString model() const;
     bool connected() const;
@@ -61,9 +64,8 @@ public slots:
     void setLiveViewState(LiveViewState liveViewState);
     void setAspectRatio(AspectRatio aspectRatio);
     void takePhoto();
-    void setFocusFar();
-    void setFocusNear();
-
+    void setFocusFar(FocusPrecision precision);
+    void setFocusNear(FocusPrecision precision);
     void setVideoSurface(QAbstractVideoSurface* liveView);
 
 signals:

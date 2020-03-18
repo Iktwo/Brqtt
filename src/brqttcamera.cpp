@@ -416,8 +416,6 @@ void BrqttCamera::debugErrorMessage(QString error)
 
 void BrqttCamera::getLiveView()
 {
-    qDebug() << "getLiveView";
-
     if (QLibraryInfo::isDebugBuild()) {
         return;
     }
@@ -558,20 +556,34 @@ void BrqttCamera::takePhoto()
     timer->start(35);
 }
 
-void BrqttCamera::setFocusFar()
+void BrqttCamera::setFocusFar(FocusPrecision precision)
 {
-    // CrNearFar_PLUS_L - 3 times
-    // CrNearFar_PLUS_M -
-    // CrNearFar_PLUS_S -
-    setFocusFarNear(SDK::CrNearFarVal::CrNearFar_PLUS_L);
+    switch (precision) {
+    case BrqttCamera::SmallPrecision:
+        setFocusFarNear(SDK::CrNearFarVal::CrNearFar_PLUS_S);
+        break;
+    case BrqttCamera::MediumPrecision:
+        setFocusFarNear(SDK::CrNearFarVal::CrNearFar_PLUS_M);
+        break;
+    case BrqttCamera::LargePrecision:
+        setFocusFarNear(SDK::CrNearFarVal::CrNearFar_PLUS_L);
+        break;
+    }
 }
 
-void BrqttCamera::setFocusNear()
+void BrqttCamera::setFocusNear(FocusPrecision precision)
 {
-    // CrNearFar_PLUS_L - 3 times
-    // CrNearFar_PLUS_M -
-    // CrNearFar_PLUS_S -
-    setFocusFarNear(SDK::CrNearFarVal::CrNearFar_MINUS_M);
+    switch (precision) {
+    case BrqttCamera::SmallPrecision:
+        setFocusFarNear(SDK::CrNearFarVal::CrNearFar_MINUS_S);
+        break;
+    case BrqttCamera::MediumPrecision:
+        setFocusFarNear(SDK::CrNearFarVal::CrNearFar_MINUS_M);
+        break;
+    case BrqttCamera::LargePrecision:
+        setFocusFarNear(SDK::CrNearFarVal::CrNearFar_MINUS_L);
+        break;
+    }
 }
 
 void BrqttCamera::setVideoSurface(QAbstractVideoSurface *liveView)
@@ -589,7 +601,7 @@ void BrqttCamera::setVideoSurface(QAbstractVideoSurface *liveView)
         timer->deleteLater();
     } );
 
-    timer->start(1000);
+    timer->start(2000);
 }
 
 void BrqttCamera::setAspectRatio(BrqttCamera::AspectRatio aspectRatio)

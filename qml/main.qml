@@ -78,6 +78,9 @@ ApplicationWindow {
             id: videoOutput
 
             anchors.fill: parent
+
+            onSourceRectChanged: console.log("sourceRect", sourceRect)
+            onContentRectChanged: console.log("contentRect", contentRect)
         }
 
         Label {
@@ -128,6 +131,48 @@ ApplicationWindow {
                 onClicked: {
                     CameraSDK.camera.getLiveView()
                 }
+            }
+        }
+
+        ShutterButton {
+            id: shutterButton
+
+            anchors {
+                right: parent.right
+                verticalCenter: parent.verticalCenter
+            }
+
+            onTriggered: {
+                if (CameraSDK.camera != null) {
+                    CameraSDK.camera.takePhoto()
+                }
+            }
+        }
+
+        Row {
+            anchors {
+                right: parent.right
+                bottom: parent.bottom
+            }
+
+            Button {
+                text: "Near"
+
+                onClicked: CameraSDK.camera.setFocusNear(focusPrecisionSlider.value)
+            }
+
+            Button {
+                text: "Far"
+
+                onClicked: CameraSDK.camera.setFocusFar(focusPrecisionSlider.value)
+            }
+        }
+
+        FocusPrecisionSlider {
+            id: focusPrecisionSlider
+
+            anchors {
+                right: parent.right
             }
         }
     }
