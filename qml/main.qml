@@ -1,5 +1,6 @@
 import QtQuick 2.14
 import QtQuick.Controls 2.14
+import QtQuick.Controls.Styles 1.4
 import QtMultimedia 5.12
 import com.iktwo.brqtt 1.0
 import config 1.0 as Config
@@ -137,34 +138,97 @@ ApplicationWindow {
         ShutterButton {
             id: shutterButton
 
+            count: spinBox.value
+
             anchors {
                 right: parent.right
                 verticalCenter: parent.verticalCenter
             }
 
             onTriggered: {
-                if (CameraSDK.camera != null) {
-                    CameraSDK.camera.takePhoto()
+                if (checkBoxFar.checked) {
+                    var focused = CameraSDK.camera.setFocusFar(focusPrecisionSlider.value)
+
+                    if (checkBoxPhotoAfterFocus.checked && focused) {
+                        CameraSDK.camera.takePhoto()
+                    }
+                } else {
+                    var focused = CameraSDK.camera.setFocusFar(focusPrecisionSlider.value)
+
+                    if (checkBoxPhotoAfterFocus.checked && focused) {
+                        CameraSDK.camera.takePhoto()
+                    }
                 }
             }
         }
 
         Row {
+            id: rowDirection
+
+            anchors {
+                right: parent.right
+                bottom: rowFocus.top
+            }
+
+            SpinBox {
+                id: spinBox
+
+                from: 1
+                to: 200
+
+                value: 5
+            }
+
+            CheckBox {
+                id: checkBoxFar
+
+                text: "Far"
+            }
+        }
+
+        Row {
+            id: rowFocus
+
             anchors {
                 right: parent.right
                 bottom: parent.bottom
             }
 
             Button {
+                id: buttonNear
+
                 text: "Near"
 
-                onClicked: CameraSDK.camera.setFocusNear(focusPrecisionSlider.value)
+                onClicked: {
+                    var focused = CameraSDK.camera.setFocusNear(focusPrecisionSlider.value)
+
+                    if (checkBoxPhotoAfterFocus.checked && focused) {
+                        CameraSDK.camera.takePhoto()
+                    }
+                }
             }
 
             Button {
+                id: buttonFar
+
                 text: "Far"
 
-                onClicked: CameraSDK.camera.setFocusFar(focusPrecisionSlider.value)
+                onClicked: {
+                    var focused = CameraSDK.camera.setFocusFar(focusPrecisionSlider.value)
+
+                    if (checkBoxPhotoAfterFocus.checked && focused) {
+                        CameraSDK.camera.takePhoto()
+                    }
+                }
+            }
+
+            CheckBox {
+                id: checkBoxPhotoAfterFocus
+
+                checked: false
+
+                text: "Photo after focusing"
+                /// TODO: customize style
             }
         }
 

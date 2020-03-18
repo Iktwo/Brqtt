@@ -64,8 +64,8 @@ public slots:
     void setLiveViewState(LiveViewState liveViewState);
     void setAspectRatio(AspectRatio aspectRatio);
     void takePhoto();
-    void setFocusFar(FocusPrecision precision);
-    void setFocusNear(FocusPrecision precision);
+    bool setFocusFar(FocusPrecision precision);
+    bool setFocusNear(FocusPrecision precision);
     void setVideoSurface(QAbstractVideoSurface* liveView);
 
 signals:
@@ -109,7 +109,7 @@ private slots:
     void getProperties();
     void getLiveViewProperties();
     void configureDeviceAndFetchProperties(bool connected);
-    void setFocusFarNear(SCRSDK::CrNearFarVal value);
+    bool setFocusFarNear(SCRSDK::CrNearFarVal value);
 };
 
 #endif // BRQTTCAMERA_H

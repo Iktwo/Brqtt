@@ -369,7 +369,7 @@ void BrqttCamera::configureDeviceAndFetchProperties(bool connected)
     }
 }
 
-void BrqttCamera::setFocusFarNear(SDK::CrNearFarVal value)
+bool BrqttCamera::setFocusFarNear(SDK::CrNearFarVal value)
 {
     SDK::CrDeviceProperty * property = new SDK::CrDeviceProperty();
     property->SetCode(SDK::CrDevicePropertyCode::CrDeviceProperty_PriorityKeySettings);
@@ -381,7 +381,7 @@ void BrqttCamera::setFocusFarNear(SDK::CrNearFarVal value)
 
     if (CR_FAILED(err_priority)) {
         qDebug() << "Priority Key setting FAILED\n";
-        return;
+        return false;
     }
 
     property = new SDK::CrDeviceProperty();
@@ -395,7 +395,7 @@ void BrqttCamera::setFocusFarNear(SDK::CrNearFarVal value)
     delete property;
     if (CR_FAILED(err_focusMode)) {
         qDebug() << "Focus mode setting FAILED\n";
-        return;
+        return false;
     }
 
     property = new SDK::CrDeviceProperty();
@@ -404,7 +404,14 @@ void BrqttCamera::setFocusFarNear(SDK::CrNearFarVal value)
     property->SetCurrentValue(value);
     property->SetValueType(SDK::CrDataType::CrDataType_UInt16Array);
 
-    SDK::SetDeviceProperty(m_deviceHandle, property);
+    auto errorSettingProperty = SDK::SetDeviceProperty(m_deviceHandle, property);
+
+    if (CR_FAILED(errorSettingProperty)) {
+        qDebug() << "Focus mode setting FAILED\n";
+        return false;
+    } else {
+        return true;
+    }
 }
 
 void BrqttCamera::debugErrorMessage(QString error)
@@ -556,33 +563,27 @@ void BrqttCamera::takePhoto()
     timer->start(35);
 }
 
-void BrqttCamera::setFocusFar(FocusPrecision precision)
+bool BrqttCamera::setFocusFar(FocusPrecision precision)
 {
     switch (precision) {
     case BrqttCamera::SmallPrecision:
-        setFocusFarNear(SDK::CrNearFarVal::CrNearFar_PLUS_S);
-        break;
+        return setFocusFarNear(SDK::CrNearFarVal::CrNearFar_PLUS_S);
     case BrqttCamera::MediumPrecision:
-        setFocusFarNear(SDK::CrNearFarVal::CrNearFar_PLUS_M);
-        break;
+        return setFocusFarNear(SDK::CrNearFarVal::CrNearFar_PLUS_M);
     case BrqttCamera::LargePrecision:
-        setFocusFarNear(SDK::CrNearFarVal::CrNearFar_PLUS_L);
-        break;
+        return setFocusFarNear(SDK::CrNearFarVal::CrNearFar_PLUS_L);
     }
 }
 
-void BrqttCamera::setFocusNear(FocusPrecision precision)
+bool BrqttCamera::setFocusNear(FocusPrecision precision)
 {
     switch (precision) {
     case BrqttCamera::SmallPrecision:
-        setFocusFarNear(SDK::CrNearFarVal::CrNearFar_MINUS_S);
-        break;
+        return setFocusFarNear(SDK::CrNearFarVal::CrNearFar_MINUS_S);
     case BrqttCamera::MediumPrecision:
-        setFocusFarNear(SDK::CrNearFarVal::CrNearFar_MINUS_M);
-        break;
+        return setFocusFarNear(SDK::CrNearFarVal::CrNearFar_MINUS_M);
     case BrqttCamera::LargePrecision:
-        setFocusFarNear(SDK::CrNearFarVal::CrNearFar_MINUS_L);
-        break;
+        return setFocusFarNear(SDK::CrNearFarVal::CrNearFar_MINUS_L);
     }
 }
 
